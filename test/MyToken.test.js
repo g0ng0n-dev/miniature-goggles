@@ -1,19 +1,13 @@
 const Token = artifacts.require("MyToken");
-require("dotenv").config({path: "../.env"});
+const chai = require("./setupchai.js");
+require('dotenv').config({path: '../.env'});
 
-var chai = require("chai");
 const BN = web3.utils.BN;
-const chaiBN = require('chai-bn')(BN)
-chai.use(chaiBN);
-
-var chaiAsPromised = require("chai-as-promised");
-const { isTypedArray } = require("util/types");
-chai.use(chaiAsPromised);
-
 const expect = chai.expect;
 
+
 contract("Token Test", async(accounts) => {
-    const[deployerAccount, recipient, anotherAccount ] = accounts;
+    const[initialHolder, recipient, anotherAccount ] = accounts;
 
     beforeEach(async() => {
         this.myToken = await Token.new(process.env.INITIAL_TOKENS);
@@ -23,25 +17,25 @@ contract("Token Test", async(accounts) => {
     it("all tokens hould be in my account", async () => {
         let instance = await this.myToken;
         let totalSupply = await instance.totalSupply();
-        await expect(instance.balanceOf(deployerAccount)).to.eventually.be.bignumber.equal(totalSupply)
+        return expect(instance.balanceOf(initialHolder)).to.eventually.be.a.bignumber.equal(totalSupply);
     });
 
     it("is possible to sned tokends between accounts", async() => {
         const sendTokens = 1;
         let instance = this.myToken;
         let totalSupply = await instance.totalSupply();
-        await expect(instance.balanceOf(deployerAccount)).to.eventually.be.a.bignumber.equal(totalSupply);
+        await expect(instance.balanceOf(initialHolder)).to.eventually.be.a.bignumber.equal(totalSupply);
         await expect(instance.transfer(recipient, sendTokens)).to.eventually.be.fulfilled;
-        await expect(instance.balanceOf(deployerAccount)).to.eventually.be.a.bignumber.equal(totalSupply.sub(new BN(sendTokens)));
-        await expect(instance.balanceOf(recipient)).to.eventually.be.a.bignumber.equal(new BN(sendTokens));
+        await expect(instance.balanceOf(initialHolder)).to.eventually.be.a.bignumber.equal(totalSupply.sub(new BN(sendTokens)));
+        return expect(instance.balanceOf(recipient)).to.eventually.be.a.bignumber.equal(new BN(sendTokens));
     });
 
     it("It's not possible to send more tokens than account 1 has", async () => {
         let instance = this.myToken;
-        let balanceOfDeployer = await instance.balanceOf(deployerAccount);
+        let balanceOfDeployer = await instance.balanceOf(initialHolder);
 
         await expect(instance.transfer(recipient, new BN(balanceOfDeployer+1))).to.eventually.be.rejected;
-        await expect(instance.balanceOf(deployerAccount)).to.eventually.be.a.bignumber.equal(balanceOfDeployer);
+        return expect(instance.balanceOf(initialHolder)).to.eventually.be.a.bignumber.equal(balanceOfDeployer);
 
     })
 } )
